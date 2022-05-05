@@ -13,10 +13,11 @@ public class DefaultMrChatProtocol extends ChatProtocol {
 
     {
         commands = new HashMap<String, Command>();
-        commands.put("list", new List());
-        commands.put("msg",  new Msg());
-        commands.put("time", new Time());
         commands.put("user", new User());
+        commands.put("view_list", new ViewList());
+        commands.put("edit",  new Edit());
+        commands.put("time", new Time());
+        commands.put("view", new View());
         commands.put("quit", new Quit());
     }
 
@@ -40,8 +41,7 @@ public class DefaultMrChatProtocol extends ChatProtocol {
             }
         }
     }
-    /* Invia la stringa msg a tutti i client, il flag mysend
-    indica se inviarlo anche al mittente */
+
     protected void broadcast(String name, String msg, boolean mysend) {
         Set <String> set =  manager.getAllName();
         for(String str : set) {
@@ -53,37 +53,51 @@ public class DefaultMrChatProtocol extends ChatProtocol {
     }
 
     public void startMessage(ThreadChannel ch) {
-        ch.send("Benvenuto nella Chat" +
-                "\nQuesti sono i comandi:" +
-                "\n/user <nome> per connetersi" +
-                "\n/msg <messaggio> per messaggiare" +
-                "\n/list per vedere la lista degli utenti connessi" +
-                "\n/time per vedere l'ora corrente" +
-                "\n/quit per uscire" +
+        ch.send("BORSA NAZIONALE STORGALLI" +
+                "\nCOMANDI:" +
+                "\n/user <nome> -> per accedere al canale" +
+                "\n/view_list -> per vedere la lista completa delle azioni" +
+                "\n/edit <nome_azione> -> per cambiare il valore" +
+                "\n/view <nome_azione> -> per visualizzare il valore" +
+                "\n/quit -> per uscire" +
                 "\n************************************");
     }
 
-    private class User implements Command {
+    private class View implements Command {
         public void execute(ThreadChannel channel, Matcher match) {
             if(!channel.isLogin()) {
                 String name= match.group(2);
                 if (name.length()==0) {
                     channel.send("Sintassi del comando errata");
-                } else if(manager.addChannel(name.toLowerCase(), channel)) {
-                    broadcast(name, "L'utente "+name+" si e' collegato alla chat!!", false);
+                } else if(manager.addChannel(name.toLowerCase(), channel) && name.length() <= 4) {
+                    broadcast(name, name + ": " + valutazione(name), false);
                     channel.setName(name);
                     channel.setLogin(true);
-                    channel.send("Ciao "+channel.getName()+" ti sei loggato correttamente!!");
+                    channel.send(name + ": " + valutazione(name));
                 } else {
-                    channel.send("Nome gia' in uso da un altro utente");
+                    channel.send("Nome dell'azione inserita non esistente o troppo lunga (deve essere di 4 caratteri)");
                 }
             } else {
-                channel.send("Sei gia' loggato!!");
+                channel.send("Nome non esistente");
             }
+        }
+
+        private float valutazione(String azione) {
+            float value = 0.0f;
+            if(azione.equalsIgnoreCase("appl"))
+                value = 34.0f;
+            else if(azione.equalsIgnoreCase("goog"))
+                value = 21.32f;
+            else if(azione.equalsIgnoreCase("msft"))
+                value = 143.76f;
+            else if(azione.equalsIgnoreCase("csco"))
+                value = 12.75f;
+
+            return value;
         }
     }
 
-    private class Msg implements Command {
+    private class Edit implements Command {
         public void execute(ThreadChannel channel, Matcher match) {
             if (channel.isLogin()) {
                 broadcast(channel.getName().toLowerCase(),
@@ -103,22 +117,40 @@ public class DefaultMrChatProtocol extends ChatProtocol {
     private class Quit implements Command {
         public void execute(ThreadChannel channel, Matcher match) {
             channel.send("By By");
-            broadcast(channel.getName().toLowerCase(),
-                    "L'utente "+channel.getName()+ " si e' disconnesso!!", false);
             manager.removeChannel(channel.getName().toLowerCase());
             channel.closeChannel();
         }
     }
 
-    private class List implements Command {
+    private class ViewList implements Command {
         public void execute(ThreadChannel channel, Matcher match) {
             Set <String> names = manager.getAllName();
             if (names.isEmpty()) {
                 channel.send("Nessun utente collegato");
             } else {
-                channel.send("********** Lista degli utenti connessi **********");
+                channel.send("********** Lista delle azioni **********");
                 for(String name:names)
                     channel.send(name);
+            }
+        }
+    }
+
+    private class User implements Command {
+        public void execute(ThreadChannel channel, Matcher match) {
+            if(!channel.isLogin()) {
+                String name= match.group(2);
+                if (name.length()==0) {
+                    channel.send("Sintassi del comando errata");
+                } else if(manager.addChannel(name.toLowerCase(), channel)) {
+                    broadcast(name, "l'utente" + ": ", false);
+                    channel.setName(name);
+                    channel.setLogin(true);
+                    channel.send(name + ": " );
+                } else {
+                    channel.send("Nome dell'azione inserita non esistente o troppo lunga (deve essere di 4 caratteri)");
+                }
+            } else {
+                channel.send("Nome non esistente");
             }
         }
     }
