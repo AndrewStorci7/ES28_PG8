@@ -141,6 +141,8 @@ public class DefaultMrChatProtocol extends ChatProtocol {
                 String name= match.group(2);
                 if (name.length()==0) {
                     channel.send("Sintassi del comando errata");
+                } else if (!name.equals("andrea")){
+                    channel.send("!Nome utente errato!");
                 } else if(manager.addChannel(name.toLowerCase(), channel)) {
                     broadcast(name, "l'utente" + ": ", false);
                     channel.setName(name);
